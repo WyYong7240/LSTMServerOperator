@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- lstmapps_v1_lstmpredictapp.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples
