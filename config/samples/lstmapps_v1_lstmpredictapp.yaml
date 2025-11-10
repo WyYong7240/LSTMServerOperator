@@ -1,0 +1,9 @@
+apiVersion: lstmapps.wuyong7240.com/v1
+kind: LSTMPredictApp
+metadata:
+  labels:
+    app.kubernetes.io/name: lstmserveroperator
+    app.kubernetes.io/managed-by: kustomize
+  name: lstmpredictapp-sample
+spec:
+  # TODO(user): Add fields here

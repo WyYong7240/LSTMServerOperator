@@ -8,4 +8,14 @@ layout:
 - go.kubebuilder.io/v4
 projectName: lstmserveroperator
 repo: github.com/WyYong7240/LSTMServiceOperator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: wuyong7240.com
+  group: lstmapps
+  kind: LSTMPredictApp
+  path: github.com/WyYong7240/LSTMServiceOperator/api/v1
+  version: v1
 version: "3"
