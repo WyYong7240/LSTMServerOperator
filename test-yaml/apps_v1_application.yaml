@@ -1,0 +1,13 @@
+apiVersion: lstmapps.wuyong7240.com/v1
+kind: LSTMPredictApp
+metadata:
+  name: lstm-timeserise-predict
+  namespace: k8s-learn
+  labels:
+    app: lstm-timeserise-predict
+spec:
+  appImage: nginx:1.14.2
+  containerPort: 80
+  backendAppReplicas: 2
+  servicePort: 80
+  serviceType: NodePort
