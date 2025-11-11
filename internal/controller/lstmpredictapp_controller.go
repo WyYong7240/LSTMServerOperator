@@ -18,15 +18,21 @@ package controller
 
 import (
 	"context"
+	"reflect"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	lstmappsv1 "github.com/WyYong7240/LSTMServiceOperator/api/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // LSTMPredictAppReconciler reconciles a LSTMPredictApp object
@@ -104,8 +110,69 @@ func (r *LSTMPredictAppReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *LSTMPredictAppReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	setupLog := ctrl.Log.WithName("Setup")
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&lstmappsv1.LSTMPredictApp{}).
+		// 监听CR自定义资源的创建删除与更新
+		For(&lstmappsv1.LSTMPredictApp{}, builder.WithPredicates(predicate.Funcs{
+			CreateFunc: func(event event.CreateEvent) bool {
+				// 一旦创建该类型的CR，立即触发Reconcile，不论什么情况
+				return true
+			},
+			DeleteFunc: func(event event.DeleteEvent) bool {
+				setupLog.Info("The LSTMPredictApp has been deleted.", "Name", event.Object.GetName())
+				return false
+			},
+			UpdateFunc: func(event event.UpdateEvent) bool {
+				// 只有当ResourceVersion不同，并且CR的Spec发生变化时，才会触发Reconcile
+				if event.ObjectNew.GetResourceVersion() == event.ObjectOld.GetResourceVersion() {
+					return false
+				}
+				oldSpec := event.ObjectOld.(*lstmappsv1.LSTMPredictApp).Spec
+				newSpec := event.ObjectNew.(*lstmappsv1.LSTMPredictApp).Spec
+
+				return !reflect.DeepEqual(oldSpec, newSpec)
+			},
+		})).
+		// 监听因CR资源而产生的Deployment资源
+		Owns(&appsv1.Deployment{}, builder.WithPredicates(predicate.Funcs{
+			// Deployment是由Reconcile控制器自己创建的，无需响应
+			CreateFunc: func(event event.CreateEvent) bool {
+				return false
+			},
+			DeleteFunc: func(event event.DeleteEvent) bool {
+				setupLog.Info("The LSTMPredictApp Deployment has been deleted.", "Name", event.Object.GetName())
+				return true
+			},
+			UpdateFunc: func(event event.UpdateEvent) bool {
+				if event.ObjectNew.GetResourceVersion() == event.ObjectOld.GetResourceVersion() {
+					return false
+				}
+				oldSpec := event.ObjectOld.(*appsv1.Deployment).Spec
+				newSpec := event.ObjectNew.(*appsv1.Deployment).Spec
+
+				return !reflect.DeepEqual(oldSpec, newSpec)
+			},
+		})).
+		// 监听因CR资源而产生的Service资源
+		Owns(&corev1.Service{}, builder.WithPredicates(predicate.Funcs{
+			//Service是由Reconcile控制器自己创建的，无需响应
+			CreateFunc: func(event event.CreateEvent) bool {
+				return false
+			},
+			DeleteFunc: func(event event.DeleteEvent) bool {
+				setupLog.Info("The LSTMPredictApp Service has been deleted.", "Name", event.Object.GetName())
+				return true
+			},
+			UpdateFunc: func(event event.UpdateEvent) bool {
+				if event.ObjectNew.GetResourceVersion() == event.ObjectOld.GetResourceVersion() {
+					return false
+				}
+				oldSpec := event.ObjectOld.(*corev1.Service).Spec
+				newSpec := event.ObjectNew.(*corev1.Service).Spec
+
+				return !reflect.DeepEqual(oldSpec, newSpec)
+			},
+		})).
 		Named("lstmpredictapp").
 		Complete(r)
 }
