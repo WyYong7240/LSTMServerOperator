@@ -6,8 +6,8 @@ metadata:
   labels:
     app: lstm-timeserise-predict
 spec:
-  appImage: nginx:1.14.2
-  containerPort: 80
+  appImage: lstm-predict-server:v1.0
+  containerPort: 8080
   backendAppReplicas: 2
   servicePort: 80
   serviceType: NodePort
